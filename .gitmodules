@@ -1,0 +1,6 @@
+[submodule "GroundingDINO"]
+	path = GroundingDINO
+	url = https://github.com/IDEA-Research/GroundingDINO.git
+[submodule "Grounded-Segment-Anything"]
+	path = Grounded-Segment-Anything
+	url = https://github.com/IDEA-Research/Grounded-Segment-Anything.git
