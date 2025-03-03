@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # 用法：
-# ./run.sh -p workfolder/images/1.jpg -b
+# ./run.sh -p results/images/1.jpg -b
 
 # -b 小  -l 中  -h 大
 # -p 输入图像路径
@@ -60,8 +60,8 @@ fi
 
 # 设置输出目录
 IMAGE_NAME=$(get_filename_without_extension "$INPUT_IMAGE")
-OUTPUT_DIR="../workfolder/GSAresults/${IMAGE_NAME}_${SAM_VERSION}"
-OUTPUT_OUTPUT_DIR="workfolder/GSAresults/${IMAGE_NAME}_${SAM_VERSION}"
+OUTPUT_DIR="../results/GSAresults/${IMAGE_NAME}_${SAM_VERSION}"
+OUTPUT_OUTPUT_DIR="results/GSAresults/${IMAGE_NAME}_${SAM_VERSION}"
 
 # 创建输出目录（如果不存在）
 mkdir -p "$OUTPUT_DIR"

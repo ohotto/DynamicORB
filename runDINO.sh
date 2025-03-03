@@ -16,7 +16,7 @@ image_filename=$(basename "$path_to_image")
 image_name_without_extension="${image_filename%.*}"
 
 # 构建输出路径
-output_path="workfolder/DINOresults/${image_name_without_extension}"
+output_path="results/DINOresults/${image_name_without_extension}"
 
 # 运行 GroundingDINO 脚本
 CUDA_VISIBLE_DEVICES=0 python GroundingDINO/demo/inference_on_a_image.py \

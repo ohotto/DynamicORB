@@ -16,7 +16,7 @@ image_filename=$(basename "$path_to_image")
 image_name_without_extension="${image_filename%.*}"
 
 # 构建输出路径
-output_path="workfolder/ORBFEresults/${image_name_without_extension}"
+output_path="results/ORBEresults/${image_name_without_extension}"
 
 # 运行 runORBfe 脚本
 python src/orb_feature_extractor.py $path_to_image

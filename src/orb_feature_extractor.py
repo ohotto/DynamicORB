@@ -8,9 +8,9 @@
 子目录下有 `test_original.jpg`, `test_with_keypoints.jpg`, 和 `test_keypoints_only.png`。
 
 参数配置 (可以在文件开头修改):
-*   `NUM_ORB_FEATURES`: ORB 特征数量 (默认: 500)
-*   `NUM_DESIRED_KEYPOINTS`: 期望的均匀分布的特征点数量 (默认: 200)
-*   `GRID_SIZE`: 用于均匀分布特征点的网格大小 (行数, 列数) (默认: (4, 4))
+*   `NUM_ORB_FEATURES`: ORB 特征数量 (默认: 5000)
+*   `NUM_DESIRED_KEYPOINTS`: 期望的均匀分布的特征点数量 (默认: 500)
+*   `GRID_SIZE`: 用于均匀分布特征点的网格大小 (行数, 列数) (默认: (50, 50))
 """
 
 import cv2
@@ -87,6 +87,9 @@ def process_image(image_path, output_dir):
     orb = cv2.ORB_create(nfeatures=NUM_ORB_FEATURES)
     keypoints, descriptors = orb.detectAndCompute(img, None)
 
+    num_extracted_keypoints = len(keypoints)
+    print(f"Extracted {num_extracted_keypoints} keypoints initially.")
+
     # 特征点均匀化分布
     distributed_keypoints = distribute_keypoints(keypoints, img.shape[1], img.shape[0], NUM_DESIRED_KEYPOINTS, GRID_SIZE)
 
@@ -105,6 +108,19 @@ def process_image(image_path, output_dir):
     # 保存原图
     cv2.imwrite(os.path.join(output_image_dir, f"{image_name}_original.jpg"), img)
 
+    # 保存参数和特征点数量到txt文件
+    with open(os.path.join(output_image_dir, "info.txt"), "w") as f:
+        f.write(f"Image Path: {image_path}\n")
+        f.write("Parameters:\n")
+        f.write(f"  NUM_ORB_FEATURES: {NUM_ORB_FEATURES}\n")
+        f.write(f"  NUM_DESIRED_KEYPOINTS: {NUM_DESIRED_KEYPOINTS}\n")
+        f.write(f"  GRID_SIZE: {GRID_SIZE}\n")
+        f.write("\n")
+        f.write("Results:\n")
+        f.write(f"  Number of extracted keypoints (before distribution): {num_extracted_keypoints}\n")
+        f.write(f"  Number of keypoints after distribution: {len(distributed_keypoints)}\n")
+
+
     print(f"Processed image: {image_path}")
 
 
@@ -113,7 +129,7 @@ def main():
     parser.add_argument("path_to_images", help="Path to the image file or directory containing images.")
     args = parser.parse_args()
 
-    output_dir = "workfolder/ORBFEresult"
+    output_dir = "results/ORBEresult"
     os.makedirs(output_dir, exist_ok=True)
 
     if os.path.isfile(args.path_to_images):
