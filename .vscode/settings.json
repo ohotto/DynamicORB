@@ -1,0 +1,8 @@
+{
+    "python.analysis.extraPaths": [
+        "${workspaceFolder}",
+        "${workspaceFolder}/Grounded-Segment-Anything",
+        "${workspaceFolder}/Grounded-Segment-Anything/segment_anything",
+        "${workspaceFolder}/Grounded-Segment-Anything/GroundingDINO"
+    ]
+}

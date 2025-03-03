@@ -1,146 +1,164 @@
 """
-使用说明:
-    python orb_feature_extractor.py /path/to/your/image.jpg
-    或者
-    python orb_feature_extractor.py /path/to/your/image_directory
-
-运行后，会在当前目录下创建一个 `result` 目录，其中包含 `test` 子目录(如果处理的文件是 test.jpg)，
-子目录下有 `test_original.jpg`, `test_with_keypoints.jpg`, 和 `test_keypoints_only.png`。
-
-参数配置 (可以在文件开头修改):
-*   `NUM_ORB_FEATURES`: ORB 特征数量 (默认: 5000)
-*   `NUM_DESIRED_KEYPOINTS`: 期望的均匀分布的特征点数量 (默认: 500)
-*   `GRID_SIZE`: 用于均匀分布特征点的网格大小 (行数, 列数) (默认: (50, 50))
+# 处理单张图像
+python src/orb_feature_extractor1.py images/1.jpg --output_dir test --num_orb 5000 --num_desired 500 --grid_rows 50 --grid_cols 50
+# 处理目录下所有图像
+python src/orb_feature_extractor.py images/ -o my_results --grid_rows 30 --grid_cols 30
 """
-
 import cv2
 import numpy as np
 import os
 import argparse
 
-# 参数配置
-NUM_ORB_FEATURES = 5000
-NUM_DESIRED_KEYPOINTS = 500
-GRID_SIZE = (50, 50)
-
-
-def distribute_keypoints(keypoints, image_width, image_height, num_desired_keypoints, grid_size=(4, 4)):
+class ORBFeatureExtractor:
     """
-    均匀化分布特征点。
-
-    Args:
-        keypoints: 原始特征点列表。
-        image_width: 图像宽度。
-        image_height: 图像高度。
-        num_desired_keypoints: 期望的特征点数量。
-        grid_size: 将图像划分的网格大小 (行数, 列数)。
-
-    Returns:
-        均匀分布后的特征点列表。
+    ORB特征提取器，支持特征点检测和均匀分布，可配置参数并输出结果图像。
+    
+    参数:
+        num_orb_features (int): ORB特征的最大数量，默认5000。
+        num_desired_keypoints (int): 期望的均匀分布特征点数，默认500。
+        grid_size (tuple): 分布特征点的网格尺寸(行数, 列数)，默认(50, 50)。
     """
+    
+    def __init__(self, num_orb_features=5000, num_desired_keypoints=500, grid_size=(50, 50)):
+        if not isinstance(grid_size, (tuple, list)) or len(grid_size) != 2:
+            raise ValueError("grid_size must be a tuple of two integers (rows, cols)")
+        self.num_orb_features = num_orb_features
+        self.num_desired_keypoints = num_desired_keypoints
+        self.grid_size = grid_size  # (rows, cols)
+        self.orb = cv2.ORB_create(nfeatures=num_orb_features)
 
-    grid_rows, grid_cols = grid_size
-    grid_width = image_width // grid_cols
-    grid_height = image_height // grid_rows
+    def extract(self, image):
+        """
+        提取ORB特征点并均匀分布。
+        
+        Args:
+            image (str/np.ndarray): 输入图像路径或数组。
+        
+        Returns:
+            dict: 包含特征点、描述子、结果图像及数量的字典。
+        """
+        if isinstance(image, str):
+            img = cv2.imread(image)
+            if img is None:
+                raise ValueError(f"无法读取图像: {image}")
+        else:
+            img = image.copy()
 
-    distributed_keypoints = []
-    for i in range(grid_rows):
-        for j in range(grid_cols):
-            # 提取当前网格内的特征点
-            grid_keypoints = [
-                kp for kp in keypoints
-                if (j * grid_width <= kp.pt[0] < (j + 1) * grid_width) and
-                   (i * grid_height <= kp.pt[1] < (i + 1) * grid_height)
-            ]
+        # 检测ORB特征
+        keypoints, descriptors = self.orb.detectAndCompute(img, None)
+        if not keypoints:
+            raise ValueError("未检测到任何特征点")
 
-            # 如果网格内有特征点，则保留响应值最高的特征点
-            if grid_keypoints:
-                best_keypoint = max(grid_keypoints, key=lambda kp: kp.response)
-                distributed_keypoints.append(best_keypoint)
+        # 均匀分布特征点
+        distributed_kps = self._distribute_keypoints(keypoints, img.shape)
 
-    # 如果特征点数量不足，可以考虑调整网格大小或者增加特征点检测的数量
-    if len(distributed_keypoints) < num_desired_keypoints:
-        print(f"Warning: Found only {len(distributed_keypoints)} keypoints, "
-              f"less than the desired {num_desired_keypoints}.")
+        # 生成结果图像
+        img_with_kp = self._draw_keypoints_on_image(img, distributed_kps)
+        kp_only_img = self._create_keypoints_only_image(img.shape, distributed_kps)
 
-    return distributed_keypoints
+        return {
+            "original_image": img,
+            "keypoints": distributed_kps,
+            "descriptors": descriptors,
+            "image_with_keypoints": img_with_kp,
+            "keypoints_only_image": kp_only_img,
+            "num_keypoints": len(distributed_kps)
+        }
 
-def process_image(image_path, output_dir):
-    """
-    处理单张图片，检测ORB特征，均匀化分布，并保存结果。
+    def _distribute_keypoints(self, keypoints, image_shape):
+        """均匀分布特征点到网格中，每个网格保留响应最高的点。"""
+        grid_rows, grid_cols = self.grid_size
+        img_h, img_w = image_shape[:2]
+        grid_w = img_w // grid_cols
+        grid_h = img_h // grid_rows
 
-    Args:
-        image_path: 图片路径。
-        output_dir: 输出目录。
-    """
+        distributed = []
+        for i in range(grid_rows):
+            for j in range(grid_cols):
+                left = j * grid_w
+                right = (j+1) * grid_w
+                top = i * grid_h
+                bottom = (i+1) * grid_h
 
-    img = cv2.imread(image_path)
-    if img is None:
-        print(f"Error: Could not read image {image_path}")
-        return
+                # 筛选当前网格内的特征点
+                candidates = [kp for kp in keypoints 
+                             if left <= kp.pt[0] < right and top <= kp.pt[1] < bottom]
+                if candidates:
+                    best_kp = max(candidates, key=lambda kp: kp.response)
+                    distributed.append(best_kp)
 
-    image_name = os.path.splitext(os.path.basename(image_path))[0]
-    output_image_dir = os.path.join(output_dir, image_name)
-    os.makedirs(output_image_dir, exist_ok=True)
+        if len(distributed) < self.num_desired_keypoints:
+            print(f"Warning: 仅分布 {len(distributed)} 个特征点，少于期望的 {self.num_desired_keypoints}。")
+        return distributed
 
-    # ORB特征检测
-    orb = cv2.ORB_create(nfeatures=NUM_ORB_FEATURES)
-    keypoints, descriptors = orb.detectAndCompute(img, None)
+    def _draw_keypoints_on_image(self, img, keypoints):
+        """在原图上绘制特征点，返回BGR图像。"""
+        return cv2.drawKeypoints(img, keypoints, None, color=(0, 255, 0), flags=0)
 
-    num_extracted_keypoints = len(keypoints)
-    print(f"Extracted {num_extracted_keypoints} keypoints initially.")
+    def _create_keypoints_only_image(self, img_shape, keypoints):
+        """生成透明背景的特征点图，返回RGBA图像。"""
+        img = np.zeros((img_shape[0], img_shape[1], 4), dtype=np.uint8)
+        for kp in keypoints:
+            x, y = map(int, kp.pt)
+            cv2.circle(img, (x, y), 3, (0, 255, 0, 255), -1)
+        return img
 
-    # 特征点均匀化分布
-    distributed_keypoints = distribute_keypoints(keypoints, img.shape[1], img.shape[0], NUM_DESIRED_KEYPOINTS, GRID_SIZE)
+    def process_and_save(self, image_path, output_dir):
+        """
+        处理图像并保存结果到指定目录。
+        
+        Args:
+            image_path (str): 输入图像路径。
+            output_dir (str): 输出目录路径。
+        """
+        result = self.extract(image_path)
+        img_name = os.path.splitext(os.path.basename(image_path))[0]
+        os.makedirs(output_dir, exist_ok=True)
 
+        # 保存原图
+        cv2.imwrite(os.path.join(output_dir, f"original.jpg"), result['original_image'])
+        # 保存带特征点的图
+        cv2.imwrite(os.path.join(output_dir, f"with_keypoints.jpg"), result['image_with_keypoints'])
+        # 保存透明特征点图
+        cv2.imwrite(os.path.join(output_dir, f"keypoints_only.png"), result['keypoints_only_image'])
+        # 保存信息文件
+        with open(os.path.join(output_dir, "ORBinfo.txt"), 'w') as f:
+            f.write(f"参数配置:\n")
+            f.write(f" ORB特征数: {self.num_orb_features}\n")
+            f.write(f" 期望特征点数: {self.num_desired_keypoints}\n")
+            f.write(f" 网格尺寸(行×列): {self.grid_size}\n")
+            f.write(f"结果统计:\n")
+            f.write(f" 初始特征点数: {len(result['keypoints'])}\n")
+            f.write(f" 分布后特征点数: {result['num_keypoints']}\n")
 
-    # 绘制特征点到原图
-    img_with_keypoints = cv2.drawKeypoints(img, distributed_keypoints, None, color=(0, 255, 0), flags=0)
-    cv2.imwrite(os.path.join(output_image_dir, f"{image_name}_with_keypoints.jpg"), img_with_keypoints)
-
-    # 创建只包含特征点的透明底png图
-    img_keypoints_only = np.zeros((img.shape[0], img.shape[1], 4), dtype=np.uint8)  # RGBA
-    for kp in distributed_keypoints:
-        x, y = map(int, kp.pt)
-        cv2.circle(img_keypoints_only, (x, y), radius=3, color=(0, 255, 0, 255), thickness=-1)  # 绿色，完全不透明
-    cv2.imwrite(os.path.join(output_image_dir, f"{image_name}_keypoints_only.png"), img_keypoints_only)
-
-    # 保存原图
-    cv2.imwrite(os.path.join(output_image_dir, f"{image_name}_original.jpg"), img)
-
-    # 保存参数和特征点数量到txt文件
-    with open(os.path.join(output_image_dir, "info.txt"), "w") as f:
-        f.write(f"Image Path: {image_path}\n")
-        f.write("Parameters:\n")
-        f.write(f"  NUM_ORB_FEATURES: {NUM_ORB_FEATURES}\n")
-        f.write(f"  NUM_DESIRED_KEYPOINTS: {NUM_DESIRED_KEYPOINTS}\n")
-        f.write(f"  GRID_SIZE: {GRID_SIZE}\n")
-        f.write("\n")
-        f.write("Results:\n")
-        f.write(f"  Number of extracted keypoints (before distribution): {num_extracted_keypoints}\n")
-        f.write(f"  Number of keypoints after distribution: {len(distributed_keypoints)}\n")
-
-
-    print(f"Processed image: {image_path}")
-
+        print(f"处理完成: {image_path} → 结果保存在 {output_dir}")
 
 def main():
-    parser = argparse.ArgumentParser(description="Detect ORB features in images, distribute them evenly, and save results.")
-    parser.add_argument("path_to_images", help="Path to the image file or directory containing images.")
+    """命令行接口，处理图像或目录。"""
+    parser = argparse.ArgumentParser(description="ORB特征提取与均匀分布")
+    parser.add_argument("input_path", help="输入图像路径或目录")
+    parser.add_argument("-o", "--output_dir", default="results/ORBResult", help="输出目录")
+    parser.add_argument("--num_orb", type=int, default=5000, help="ORB特征数量")
+    parser.add_argument("--num_desired", type=int, default=500, help="期望特征点数")
+    parser.add_argument("--grid_rows", type=int, default=50, help="网格行数")
+    parser.add_argument("--grid_cols", type=int, default=50, help="网格列数")
     args = parser.parse_args()
 
-    output_dir = "results/ORBEresult"
-    os.makedirs(output_dir, exist_ok=True)
+    extractor = ORBFeatureExtractor(
+        num_orb_features=args.num_orb,
+        num_desired_keypoints=args.num_desired,
+        grid_size=(args.grid_rows, args.grid_cols)
+    )
 
-    if os.path.isfile(args.path_to_images):
-        process_image(args.path_to_images, output_dir)
-    elif os.path.isdir(args.path_to_images):
-        for filename in os.listdir(args.path_to_images):
-            if filename.endswith(('.jpg', '.jpeg', '.png', '.bmp')):  # 检查文件类型
-                image_path = os.path.join(args.path_to_images, filename)
-                process_image(image_path, output_dir)
+    if os.path.isfile(args.input_path):
+        extractor.process_and_save(args.input_path, args.output_dir)
+    elif os.path.isdir(args.input_path):
+        for fname in os.listdir(args.input_path):
+            if fname.lower().endswith(('.jpg', '.jpeg', '.png', '.bmp')):
+                img_path = os.path.join(args.input_path, fname)
+                extractor.process_and_save(img_path, args.output_dir)
     else:
-        print(f"Error: {args.path_to_images} is not a valid file or directory.")
+        print("错误: 输入路径无效")
 
 if __name__ == "__main__":
     main()

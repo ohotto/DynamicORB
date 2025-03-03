@@ -1,4 +1,7 @@
-/models
+/models/
 /images/
 /results/
 /archive/
+scripts/webdav_config.ini
+__pycache__/
+/test/
