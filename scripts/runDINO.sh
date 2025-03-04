@@ -3,7 +3,7 @@
 # 检查是否提供了图像路径作为参数
 if [ -z "$1" ]; then
   echo "Error: 请提供图像的路径作为参数。"
-  echo "Usage: ./your_script_name.sh <path_to_image>"
+  echo "Usage: ./scripts/runDINO.sh <path_to_image>"
   exit 1
 fi
 

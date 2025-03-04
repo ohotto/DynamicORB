@@ -15,7 +15,7 @@ import argparse
 import numpy as np
 import json
 import torch
-from PIL import Image
+from PIL import Image, ImageDraw
 import cv2
 import matplotlib.pyplot as plt
 
@@ -207,6 +207,22 @@ class GroundedSAM:
         # 保存元数据文件
         with open(os.path.join(output_dir, 'GSAmask.json'), 'w') as f:
             json.dump(json_data, f, indent=4)
+
+    def visualize_boxes_transparent(self, results, output_path):
+        """在透明背景上绘制检测框和标签"""
+        img_size = results['original_size']  # (width, height)
+        transparent_img = Image.new('RGBA', img_size, (0, 0, 0, 0))
+        draw = ImageDraw.Draw(transparent_img)
+        
+        for box, phrase, logit in zip(results['boxes'], results['phrases'], results['logits']):
+            x0, y0, x1, y1 = box.cpu().numpy() if isinstance(box, torch.Tensor) else box
+            # 绘制矩形框
+            draw.rectangle([x0, y0, x1, y1], outline='green', width=2)
+            # 绘制标签文本
+            label = f"{phrase} ({logit:.2f})"
+            draw.text((x0, y0), label, fill='black', stroke_width=1)
+        
+        transparent_img.save(output_path)
 
 def main():
     # 命令行参数解析

@@ -3,7 +3,7 @@
 # 检查是否提供了两个图像路径作为参数
 if [ -z "$1" ] || [ -z "$2" ]; then
   echo "Error: 请提供两个图像的路径作为参数。"
-  echo "Usage: ./runORBfm.sh <path_to_image1> <path_to_image2>"
+  echo "Usage: ./scripts/runORBfm.sh <path_to_image1> <path_to_image2>"
   exit 1
 fi
 

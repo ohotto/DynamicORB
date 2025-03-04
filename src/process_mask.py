@@ -26,6 +26,14 @@ class MaskProcessor:
             sam_checkpoint=sam_checkpoint,
             device=device
         )
+
+    def _save_transparent_mask(self, mask_array, output_path, color=(0, 255, 255, 180)):
+        """保存透明背景的分割mask"""
+        rgba = np.zeros((*mask_array.shape, 4), dtype=np.uint8)
+        mask = (mask_array > 0)  # 处理任意非零值为mask
+        rgba[mask] = color
+        rgba[~mask] = [0, 0, 0, 0]
+        Image.fromarray(rgba).save(output_path)
         
     def process(self, image_path, output_dir, 
                 text_prompt, 
@@ -51,9 +59,14 @@ class MaskProcessor:
         
         # 合并所有mask
         merged_mask = self._merge_masks(results["masks"])
+        seg_transparent_path = os.path.join(output_dir, "segmentation_mask_transparent.png")
+        self._save_transparent_mask(merged_mask, seg_transparent_path)
         
         # 形态学膨胀
         dilated_mask = self._dilate_mask(merged_mask, dilation_kernel_size, dilation_iterations)
+        dilated_transparent_path = os.path.join(output_dir, "dilated_mask_transparent.png")
+        self._save_transparent_mask(dilated_mask, dilated_transparent_path)
+
         
         # 保存最终mask
         final_mask_path = os.path.join(output_dir, "processed_mask.jpg")
@@ -74,10 +87,17 @@ class MaskProcessor:
     
     def _save_intermediate_results(self, results, output_dir):
         """保存原始分割结果"""
+        # 原有可视化结果
         self.gsam.visualize_results(
             results=results,
             output_path=os.path.join(output_dir, "GSAoutput.jpg")
         )
+        # 新增透明检测框
+        self.gsam.visualize_boxes_transparent(
+            results=results,
+            output_path=os.path.join(output_dir, "detection_boxes_transparent.png")
+        )
+        # 保存mask数据
         self.gsam.save_mask_data(
             output_dir=output_dir,
             results=results

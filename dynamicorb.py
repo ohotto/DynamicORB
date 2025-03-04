@@ -1,7 +1,7 @@
 """
 动态ORB特征点剔除程序
 使用说明：
-python dynamicorb.py --input images/cars1.jpg --output results/dynamic_orb
+python dynamicorb.py --input images/1.jpg --output results/dynamic_orb/1
 """
 import sys
 import os
@@ -29,8 +29,8 @@ def main():
         'text_prompt': "car . truck . motorbike . bicycle . people",  # 检测目标类别
         'box_threshold': 0.3,        # 检测框置信度阈值
         'text_threshold': 0.25,      # 文本匹配阈值
-        'dilation_kernel': 15,        # 膨胀卷积核大小
-        'dilation_iters': 3          # 膨胀迭代次数
+        'dilation_kernel': 5,        # 膨胀卷积核大小
+        'dilation_iters': 2          # 膨胀迭代次数
     }
     
     # 模型路径配置
@@ -101,12 +101,13 @@ def main():
             static_keypoints.append(kp)  # 超出图像范围的点保留
 
     # 生成结果可视化
-    print("\n=== 生成结果可视化 ===")
+    print("\n=== 生成结果可视化 ===\n")
     # 叠加静态点的原图
     overlay_img = cv2.drawKeypoints(
         orb_result['original_image'], static_keypoints, None,
         color=OUTPUT_CONFIG['overlay_color'],
-        flags=cv2.DRAW_MATCHES_FLAGS_DRAW_RICH_KEYPOINTS
+        # flags=cv2.DRAW_MATCHES_FLAGS_DRAW_RICH_KEYPOINTS
+        flags=0
     )
     
     # 透明背景特征点图
@@ -127,13 +128,38 @@ def main():
     
     cv2.imwrite(final_output['overlay'], overlay_img)
     cv2.imwrite(final_output['transparent'], transparent_img)
+
+    # 读取附加信息文件
+    orb_info_path = os.path.join(args.output, "orb_results", "ORBinfo.txt")
+    pmask_info_path = os.path.join(args.output, "mask_results", "PMASKinfo.txt")
+
+    def read_info_file(path):
+        try:
+            with open(path, 'r') as f:
+                return f.read().rstrip('\n')
+        except FileNotFoundError:
+            return f"警告：文件 {os.path.basename(path)} 未找到"
+        
+    orb_info = read_info_file(orb_info_path)
+    pmask_info = read_info_file(pmask_info_path)
+
+    # 计算动态特征点占比
+    total_features = len(orb_result['keypoints'])
+    dynamic_ratio = dynamic_count / total_features if total_features > 0 else 0.0
     
     # 生成统计报告
-    report_content = f"""=== 处理结果报告 ===
+    report_content = f"""=== ORB特征提取 ===
+{orb_info}
+
+=== 动态区域分割 ===
+{pmask_info}
+    
+=== 处理结果报告 ===
 输入图像: {args.input}
-总提取特征点数: {len(orb_result['keypoints'])}
+总提取特征点数: {total_features}
 静态特征点数: {len(static_keypoints)}
 剔除动态特征点数: {dynamic_count}
+动态特征点占比: {dynamic_ratio:.2%}
 动态区域占比: {mask_result['area_ratio']:.2%}
 """
     with open(final_output['report'], 'w') as f:

@@ -3,7 +3,7 @@
 # 检查是否提供了图像路径作为参数
 if [ -z "$1" ]; then
   echo "Error: 请提供图像的路径作为参数。"
-  echo "Usage: ./runORBfe.sh <path_to_image>"
+  echo "Usage: ./scripts/runORBfe.sh <path_to_image>"
   exit 1
 fi
 
@@ -19,6 +19,6 @@ image_name_without_extension="${image_filename%.*}"
 output_path="results/ORBEresults/${image_name_without_extension}"
 
 # 运行 runORBfe 脚本
-python src/orb_feature_extractor.py $path_to_image
+python src/orb_feature_extractor_standalone.py $path_to_image
 
 echo "提取完成。结果保存到: $output_path"

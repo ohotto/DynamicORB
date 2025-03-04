@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # 用法：
-# ./run.sh -p results/images/1.jpg -b
+# ./scripts/runGSA.sh -p results/images/1.jpg -b
 
 # -b 小  -l 中  -h 大
 # -p 输入图像路径
