@@ -5,3 +5,4 @@
 scripts/webdav_config.ini
 __pycache__/
 /test/
+gitpush.sh
