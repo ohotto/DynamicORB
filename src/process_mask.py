@@ -8,8 +8,33 @@ python src/process_mask.py \
   --output_dir $(pwd)/test/ \
   --dilation_kernel 5 \
   --dilation_iters 1
-"""
 
+使用说明:
+该程序使用 Grounded-SAM 模型对图像进行分割，并对分割结果进行后处理
+
+参数说明:
+    --config: Grounded-SAM 配置文件路径
+    --grounded_checkpoint: Grounded 检测器权重路径
+    --sam_checkpoint: SAM 模型权重路径
+    --input_image: 输入图像路径
+    --text_prompt: 分割提示文本，用于指导 Grounded-SAM 模型进行分割
+    --output_dir: 输出目录，用于保存分割结果和中间文件，默认为 "processed_output"
+    --box_thresh: 检测框置信度阈值，用于过滤 Grounded 检测器的检测结果，默认为 0.3
+    --text_thresh: 文本匹配阈值，用于过滤文本匹配结果，默认为 0.25
+    --dilation_kernel: 膨胀核大小，用于形态学膨胀操作，默认为 15
+    --dilation_iters: 膨胀迭代次数，用于形态学膨胀操作，默认为 3
+    --device: 运行设备，默认为 "cuda"，如果 CUDA 不可用则使用 "cpu"
+
+输出：
+   - GSAoutput.jpg: 包含原始图像、检测框和分割掩膜的可视化结果
+   - GSAmask.jpg: 分割掩膜的可视化图像，每个实例用不同的颜色表示
+   - GSAmask.json: 包含每个实例的标签、置信度得分和边界框信息的 JSON 文件
+   - detection_boxes_transparent.png: 带有透明检测框的图像
+   - segmentation_mask_transparent.png: 透明背景的分割掩膜
+   - dilated_mask_transparent.png: 经过形态学膨胀处理的透明掩膜
+   - processed_mask.jpg: 最终处理后的掩膜图像
+   - PMASKinfo.txt: 包含处理参数和统计信息的文本文件
+"""
 import os
 import argparse
 import numpy as np

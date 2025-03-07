@@ -1,10 +1,26 @@
 """
-ORB特征提取与匹配程序
+使用说明：
+该程序用于提取两张图片的ORB特征点，并进行特征匹配
 
-用法：
-python orb_feature_matching.py <path_to_image1> <path_to_image2>
+运行方式：
+python src/orb_feature_matcher.py <image_path1> <image_path2> --save_dir <save_directory>
 
-配置参数说明：
+参数：
+<image_path1>: 第一张图片的路径
+<image_path2>: 第二张图片的路径
+--save_dir <save_directory>:  保存结果的目录如果未提供，则使用默认目录 "results/ORBMresult"
+
+程序会：
+1. 读取两张图片
+2. 使用ORB算法检测并提取关键点和描述符
+3. 对关键点进行均匀分布处理，减少特征点数量
+4. 使用暴力匹配器（BFMatcher）进行特征匹配
+5. 将结果（包括原始图片、关键点图片、透明关键点图片、匹配结果图片和信息文件）保存到指定的目录中
+   如果未指定目录，则保存到 results/ORBMresult 目录下，子目录以图片名称命名
+6. 在控制台输出配置参数和特征点数量等信息
+
+配置参数：
+程序内部定义了多个配置参数，包括ORB算法参数、均匀分布参数和匹配参数，可以在程序开头修改
 [ORB参数]
 ORB_MAX_FEATURES = 1000      # 最大特征检测数量（0表示无限制）
 ORB_SCALE_FACTOR = 1.2       # 金字塔缩放因子
@@ -17,7 +33,7 @@ MAX_PER_GRID = 20            # 每个网格最大特征点数
 [匹配参数]
 MATCH_RATIO_THRESH = 0.75    # 匹配质量阈值
 [路径参数]
-RESULT_ROOT = "results/ORBMresult"  # 结果保存路径
+RESULT_ROOT = "results/ORBMresult"  # 默认结果保存路径
 """
 
 import cv2
@@ -78,6 +94,7 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('path1', help="第一张图片路径")
     parser.add_argument('path2', help="第二张图片路径")
+    parser.add_argument('--save_dir', help="保存结果的目录", default=None) # 添加 save_dir 参数
     args = parser.parse_args()
 
     # 读取并校验图片
@@ -134,7 +151,13 @@ def main():
     # 创建保存目录
     img_name1 = os.path.splitext(os.path.basename(args.path1))[0]
     img_name2 = os.path.splitext(os.path.basename(args.path2))[0]
-    save_dir = os.path.join(RESULT_ROOT, f"{img_name1}-{img_name2}")
+
+    if args.save_dir:
+        save_dir = args.save_dir
+    else:
+        save_dir = os.path.join(RESULT_ROOT, f"{img_name1}-{img_name2}")
+
+
     os.makedirs(save_dir, exist_ok=True)
 
     # 保存结果图片

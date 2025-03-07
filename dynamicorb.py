@@ -1,7 +1,46 @@
 """
 动态ORB特征点剔除程序
+
 使用说明：
-python dynamicorb.py --input images/1.jpg --output results/dynamic_orb/1
+该程序用于提取图像的ORB特征点，并结合实例分割结果剔除动态特征点
+
+运行方式：
+python dynamicorb.py --input <input_image_path> --output <output_directory>
+
+参数：
+--input: 输入图像路径
+--output: 输出目录路径
+
+程序会：
+1. 提取图像的ORB特征点
+2. 使用 Grounded-SAM 模型对图像进行实例分割
+3. 剔除动态特征点，生成结果可视化
+4. 输出处理结果报告
+
+配置参数：
+- ORB_CONFIG: ORB特征提取参数
+- SEGMENT_CONFIG: 实例分割参数
+- MODEL_PATHS: 模型路径配置
+- OUTPUT_CONFIG: 输出配置
+
+输出：
+- static_orb_overlay.jpg: 叠加静态特征点图
+- static_orb_transparent.png: 透明背景静态特征点图
+- result_report.txt: 处理结果报告
+- mask_results/: 实例分割结果目录
+    - GSAoutput.jpg: 包含原始图像、检测框和分割掩膜的可视化结果
+    - GSAmask.jpg: 分割掩膜的可视化图像，每个实例用不同的颜色表示
+    - GSAmask.json: 包含每个实例的标签、置信度得分和边界框信息的 JSON 文件
+    - detection_boxes_transparent.png: 带有透明检测框的图像
+    - segmentation_mask_transparent.png: 透明背景的分割掩膜
+    - dilated_mask_transparent.png: 经过形态学膨胀处理的透明掩膜
+    - processed_mask.jpg: 最终处理后的掩膜图像
+    - PMASKinfo.txt: 包含处理参数和统计信息的文本文件
+- orb_results/: ORB特征提取结果目录
+    - original.jpg: 原始图像
+    - with_keypoints.jpg: 带特征点的图像
+    - keypoints_only.png: 仅特征点的图像
+    - ORBinfo.txt: 包含参数配置和特征点数量的信息文件
 """
 import sys
 import os

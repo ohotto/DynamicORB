@@ -1,16 +1,25 @@
 """
-使用说明:
-    python orb_feature_extractor.py /path/to/your/image.jpg
-    或者
-    python orb_feature_extractor.py /path/to/your/image_directory
+本脚本用于检测图像中的ORB特征，将这些特征均匀地分布在图像上，并保存结果
 
-运行后，会在当前目录下创建一个 `result` 目录，其中包含 `test` 子目录(如果处理的文件是 test.jpg)，
-子目录下有 `test_original.jpg`, `test_with_keypoints.jpg`, 和 `test_keypoints_only.png`。
+用法：
+    python src/orb_feature_extractor_standalone.py <path_to_images> --output_dir <output_directory>
 
-参数配置 (可以在文件开头修改):
-*   `NUM_ORB_FEATURES`: ORB 特征数量 (默认: 5000)
-*   `NUM_DESIRED_KEYPOINTS`: 期望的均匀分布的特征点数量 (默认: 500)
-*   `GRID_SIZE`: 用于均匀分布特征点的网格大小 (行数, 列数) (默认: (50, 50))
+参数：
+    path_to_images: 图像文件或包含图像文件的目录的路径 支持的图像格式为：.jpg、.jpeg、.png、.bmp
+    output_dir: (可选) 输出目录 如果未提供，则默认为 "results/ORBEresult"
+
+输出：
+    对于处理的每张图像，都会在指定的输出目录中创建一个目录，该目录的名称与图像的名称（不带扩展名）相同
+    每个图像目录包含：
+        - <image_name>_with_keypoints.jpg：原始图像，并在其上绘制了分布的特征点
+        - <image_name>_keypoints_only.png：一个透明的PNG图像，仅包含分布的特征点
+        - <image_name>_original.jpg：原始图像的副本
+        - info.txt：一个文本文件，其中包含使用的参数以及在分布前后提取的特征点数量
+
+可以在脚本中调整的参数：
+    NUM_ORB_FEATURES：最初要检测的ORB特征的最大数量 (默认: 5000)
+    NUM_DESIRED_KEYPOINTS：分布后所需的特征点数量 (默认: 500)
+    GRID_SIZE：用于分布特征点的网格大小（行数，列数） (默认: (50, 50))
 """
 
 import cv2
@@ -26,17 +35,17 @@ GRID_SIZE = (50, 50)
 
 def distribute_keypoints(keypoints, image_width, image_height, num_desired_keypoints, grid_size=(4, 4)):
     """
-    均匀化分布特征点。
+    均匀化分布特征点
 
     Args:
-        keypoints: 原始特征点列表。
-        image_width: 图像宽度。
-        image_height: 图像高度。
-        num_desired_keypoints: 期望的特征点数量。
-        grid_size: 将图像划分的网格大小 (行数, 列数)。
+        keypoints: 原始特征点列表
+        image_width: 图像宽度
+        image_height: 图像高度
+        num_desired_keypoints: 期望的特征点数量
+        grid_size: 将图像划分的网格大小 (行数, 列数)
 
     Returns:
-        均匀分布后的特征点列表。
+        均匀分布后的特征点列表
     """
 
     grid_rows, grid_cols = grid_size
@@ -67,11 +76,11 @@ def distribute_keypoints(keypoints, image_width, image_height, num_desired_keypo
 
 def process_image(image_path, output_dir):
     """
-    处理单张图片，检测ORB特征，均匀化分布，并保存结果。
+    处理单张图片，检测ORB特征，均匀化分布，并保存结果
 
     Args:
-        image_path: 图片路径。
-        output_dir: 输出目录。
+        image_path: 图片路径
+        output_dir: 输出目录
     """
 
     img = cv2.imread(image_path)
@@ -127,9 +136,10 @@ def process_image(image_path, output_dir):
 def main():
     parser = argparse.ArgumentParser(description="Detect ORB features in images, distribute them evenly, and save results.")
     parser.add_argument("path_to_images", help="Path to the image file or directory containing images.")
+    parser.add_argument("--output_dir", help="Path to the output directory. Defaults to 'results/ORBEresult'.", default="results/ORBEresult")
     args = parser.parse_args()
 
-    output_dir = "results/ORBEresult"
+    output_dir = args.output_dir
     os.makedirs(output_dir, exist_ok=True)
 
     if os.path.isfile(args.path_to_images):

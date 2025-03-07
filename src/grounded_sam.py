@@ -6,6 +6,29 @@ python src/grounded_sam.py \
 --input_image $(pwd)/images/cars1.jpg \
 --text_prompt "car . truck . motorbike . bicycle . people" \
 --output_dir $(pwd)/results/main/
+
+Grounded-SAM 实例分割程序使用说明：
+
+该程序结合 GroundingDINO 和 SAM 模型，实现基于文本提示的图像实例分割
+
+参数说明：
+   - --config: GroundingDINO 配置文件路径（例如：GroundingDINO_SwinT_OGC.py）
+   - --grounded_checkpoint: GroundingDINO 模型权重路径（例如：groundingdino_swint_ogc.pth）
+   - --sam_checkpoint: SAM 模型权重路径（例如：sam_vit_l_0b3195.pth）【默认使用L尺寸，其他尺寸请自行修改代码__init__】
+   - --input_image: 待处理的输入图像路径
+   - --text_prompt: 检测提示文本，用 '.' 分隔多个类别（例如：'car . person . traffic light'）
+   - --output_dir: 输出目录路径，默认为 "outputs"
+   - --device: 计算设备选择，可以是 "cuda" 或 "cpu"，默认为 "cuda"（如果可用）
+
+输出：
+   - GSAoutput.jpg: 包含原始图像、检测框和分割掩膜的可视化结果
+   - GSAmask.jpg: 分割掩膜的可视化图像，每个实例用不同的颜色表示
+   - GSAmask.json: 包含每个实例的标签、置信度得分和边界框信息的 JSON 文件
+
+注意事项：
+   - 确保提供的模型权重文件路径正确
+   - 根据实际需求调整文本提示，以获得最佳分割效果
+   - 如果 GPU 可用，建议使用 "cuda" 设备以提高处理速度
 """
 
 

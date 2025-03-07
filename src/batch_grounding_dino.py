@@ -1,3 +1,29 @@
+"""
+该脚本使用 Grounding DINO 对一批图像执行目标检测
+
+参数：
+--config_file: Grounding DINO 模型配置文件路径
+--checkpoint_path: Grounding DINO 模型权重文件路径
+--image_path: 图像目录路径
+--text_prompt: 检测提示文本
+--output_dir: 输出目录路径
+--box_threshold: 检测框置信度阈值，默认为 0.3
+--text_threshold: 文本匹配阈值，默认为 0.25
+--token_spans: 指定检测提示文本的 token 范围，格式为 [(start1, end1), (start2, end2), ...]
+--cpu-only: 仅使用 CPU 运行
+--extensions: 图像文件扩展名列表，默认为 ["jpg", "png", "jpeg", "bmp"]
+
+输出：
+输出目录中包含处理后的图像，文件名为原始图像文件名加上 "_pred.jpg" 后缀
+
+示例：
+python src/batch_grounding_dino.py \
+    --config_file configs/GroundingDINO_SwinT_OGC.py \
+    --checkpoint_path models/groundingdino_swint_ogc.pth \
+    --image_path images/ \
+    --text_prompt "a cat . a dog ." \
+    --output_dir results/
+"""
 import argparse
 import os
 import sys
@@ -231,6 +257,7 @@ if __name__ == "__main__":
         print(f"Processing {img_path}...")
         try:
             image_pil = Image.open(img_path).convert("RGB")
+            # 调整图片大小，可注释
             image_pil = resize_image(image_pil, height=480)
             process_single_image(img_path, image_pil, args.output_dir, model, args)
         except Exception as e:

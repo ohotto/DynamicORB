@@ -1,3 +1,29 @@
+"""
+WebDAV上传工具
+
+使用方法:
+  python scripts/upload_to_webdav.py <path> [-c <config_file>] [-p]
+
+参数:
+  path: 要上传的本地文件或目录路径
+  -c, --config: 配置文件路径 (默认为 'scripts/webdav_config.ini')
+  -p, --package: 是否将目录打包成zip文件上传
+
+配置文件 (webdav_config.ini) 示例:
+  [webdav]
+  webdav_hostname = your_webdav_hostname
+  webdav_login = your_webdav_login (可选)
+  webdav_password = your_webdav_password (可选)
+  disable_check = True/False (可选, 默认为 True, 禁用SSL证书验证)
+  root_path = /your/root/path (可选, 默认为 '/')
+  ssl_verify = True/False (可选, 默认为 False, 启用/禁用 SSL 证书验证)
+
+示例:
+  1. 上传文件: python scripts/upload_to_webdav.py /path/to/your/file.txt
+  2. 上传目录: python scripts/upload_to_webdav.py /path/to/your/directory
+  3. 上传目录并打包成zip: python scripts/upload_to_webdav.py /path/to/your/directory -p
+  4. 使用自定义配置文件: python scripts/upload_to_webdav.py /path/to/your/file.txt -c /path/to/your/custom_config.ini
+"""
 import os
 import sys
 import argparse

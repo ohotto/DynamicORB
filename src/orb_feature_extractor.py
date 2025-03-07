@@ -1,8 +1,34 @@
 """
-# 处理单张图像
-python src/orb_feature_extractor1.py images/1.jpg --output_dir test --num_orb 5000 --num_desired 500 --grid_rows 50 --grid_cols 50
-# 处理目录下所有图像
-python src/orb_feature_extractor.py images/ -o my_results --grid_rows 30 --grid_cols 30
+ORB特征提取与均匀分布程序
+
+该程序使用ORB算法提取图像特征，并对特征点进行均匀分布，以获得更均匀的关键点
+程序支持单个图像或整个目录的处理，并将结果保存到指定的输出目录中
+
+用法:
+    python src/orb_feature_extractor.py <输入路径> [选项]
+
+输入路径:
+    - 输入图像的路径或包含图像的目录
+
+选项:
+    - -o, --output_dir: 输出目录 (默认: results/ORBResult)
+    - --num_orb: ORB特征的最大数量 (默认: 5000)
+    - --num_desired: 期望的均匀分布特征点数 (默认: 500)
+    - --grid_rows: 分布特征点的网格行数 (默认: 50)
+    - --grid_cols: 分布特征点的网格列数 (默认: 50)
+
+示例:
+    1. 处理单个图像:
+       python src/orb_feature_extractor.py image.jpg -o output_dir
+
+    2. 处理目录中的所有图像:
+       python src/orb_feature_extractor.py input_dir -o output_dir --num_orb 10000 --num_desired 1000 --grid_rows 100 --grid_cols 100
+
+输出：
+- original.jpg: 原始图像
+- with_keypoints.jpg: 带特征点的图像
+- keypoints_only.png: 仅特征点的图像
+- ORBinfo.txt: 包含参数配置和特征点数量的信息文件
 """
 import cv2
 import numpy as np
@@ -11,12 +37,12 @@ import argparse
 
 class ORBFeatureExtractor:
     """
-    ORB特征提取器，支持特征点检测和均匀分布，可配置参数并输出结果图像。
+    ORB特征提取器，支持特征点检测和均匀分布，可配置参数并输出结果图像
     
     参数:
-        num_orb_features (int): ORB特征的最大数量，默认5000。
-        num_desired_keypoints (int): 期望的均匀分布特征点数，默认500。
-        grid_size (tuple): 分布特征点的网格尺寸(行数, 列数)，默认(50, 50)。
+        num_orb_features (int): ORB特征的最大数量，默认5000
+        num_desired_keypoints (int): 期望的均匀分布特征点数，默认500
+        grid_size (tuple): 分布特征点的网格尺寸(行数, 列数)，默认(50, 50)
     """
     
     def __init__(self, num_orb_features=5000, num_desired_keypoints=500, grid_size=(50, 50)):
@@ -29,13 +55,13 @@ class ORBFeatureExtractor:
 
     def extract(self, image):
         """
-        提取ORB特征点并均匀分布。
+        提取ORB特征点并均匀分布
         
         Args:
-            image (str/np.ndarray): 输入图像路径或数组。
+            image (str/np.ndarray): 输入图像路径或数组
         
         Returns:
-            dict: 包含特征点、描述子、结果图像及数量的字典。
+            dict: 包含特征点、描述子、结果图像及数量的字典
         """
         if isinstance(image, str):
             img = cv2.imread(image)
@@ -66,7 +92,7 @@ class ORBFeatureExtractor:
         }
 
     def _distribute_keypoints(self, keypoints, image_shape):
-        """均匀分布特征点到网格中，每个网格保留响应最高的点。"""
+        """均匀分布特征点到网格中，每个网格保留响应最高的点"""
         grid_rows, grid_cols = self.grid_size
         img_h, img_w = image_shape[:2]
         grid_w = img_w // grid_cols
@@ -88,15 +114,15 @@ class ORBFeatureExtractor:
                     distributed.append(best_kp)
 
         if len(distributed) < self.num_desired_keypoints:
-            print(f"Warning: 仅分布 {len(distributed)} 个特征点，少于期望的 {self.num_desired_keypoints}。")
+            print(f"Warning: 仅分布 {len(distributed)} 个特征点，少于期望的 {self.num_desired_keypoints}")
         return distributed
 
     def _draw_keypoints_on_image(self, img, keypoints):
-        """在原图上绘制特征点，返回BGR图像。"""
+        """在原图上绘制特征点，返回BGR图像"""
         return cv2.drawKeypoints(img, keypoints, None, color=(0, 255, 0), flags=0)
 
     def _create_keypoints_only_image(self, img_shape, keypoints):
-        """生成透明背景的特征点图，返回RGBA图像。"""
+        """生成透明背景的特征点图，返回RGBA图像"""
         img = np.zeros((img_shape[0], img_shape[1], 4), dtype=np.uint8)
         for kp in keypoints:
             x, y = map(int, kp.pt)
@@ -105,11 +131,11 @@ class ORBFeatureExtractor:
 
     def process_and_save(self, image_path, output_dir):
         """
-        处理图像并保存结果到指定目录。
+        处理图像并保存结果到指定目录
         
         Args:
-            image_path (str): 输入图像路径。
-            output_dir (str): 输出目录路径。
+            image_path (str): 输入图像路径
+            output_dir (str): 输出目录路径
         """
         result = self.extract(image_path)
         img_name = os.path.splitext(os.path.basename(image_path))[0]
@@ -134,7 +160,7 @@ class ORBFeatureExtractor:
         print(f"处理完成: {image_path} → 结果保存在 {output_dir}")
 
 def main():
-    """命令行接口，处理图像或目录。"""
+    """命令行接口，处理图像或目录"""
     parser = argparse.ArgumentParser(description="ORB特征提取与均匀分布")
     parser.add_argument("input_path", help="输入图像路径或目录")
     parser.add_argument("-o", "--output_dir", default="results/ORBResult", help="输出目录")
